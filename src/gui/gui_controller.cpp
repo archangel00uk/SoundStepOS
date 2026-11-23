@@ -108,7 +108,7 @@ void ApplyKnobPos(Config& c, int id, int pos) {
         case K_LIFT:    c.upCompMaxGainDb = static_cast<float>(pos); break;
         case K_TRANS:   c.transAmount = pos * 0.5f; break;
         case K_SELF:    c.selfSuppressDepthDb = static_cast<float>(pos); break;
-        case K_CEILING: c.limiterCeilingDb = -(1.0f + pos * 0.1f); break;
+        case K_CEILING: c.limiterCeilingDb = -12.0f + pos * 0.1f; break;
         default: break;
     }
 }
@@ -122,7 +122,7 @@ int KnobPosFromConfig(const Config& c, int id) {
         case K_LIFT:    return static_cast<int>(c.upCompMaxGainDb + 0.5f);
         case K_TRANS:   return static_cast<int>(c.transAmount * 2.0f + 0.5f);
         case K_SELF:    return static_cast<int>(c.selfSuppressDepthDb + 0.5f);
-        case K_CEILING: return static_cast<int>((-c.limiterCeilingDb - 1.0f) * 10.0f + 0.5f);
+        case K_CEILING: return static_cast<int>((c.limiterCeilingDb + 12.0f) * 10.0f + 0.5f);
         default: return 0;
     }
 }
@@ -136,7 +136,7 @@ void FormatKnobValue(int id, int pos, wchar_t* buf, size_t len) {
         case K_LIFT:    _snwprintf_s(buf, len, _TRUNCATE, L"%d dB", pos); break;
         case K_TRANS:   _snwprintf_s(buf, len, _TRUNCATE, L"%.1f dB", pos * 0.5f); break;
         case K_SELF:    _snwprintf_s(buf, len, _TRUNCATE, L"%d dB", pos); break;
-        case K_CEILING: _snwprintf_s(buf, len, _TRUNCATE, L"%.1f dB", -(1.0f + pos * 0.1f)); break;
+        case K_CEILING: _snwprintf_s(buf, len, _TRUNCATE, L"%.1f dB", -12.0f + pos * 0.1f); break;
         default: break;
     }
 }
