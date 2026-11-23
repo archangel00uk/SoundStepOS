@@ -13,13 +13,15 @@ inline Config make(Preset p) {
 
     switch (p) {
         case Preset::Footstep: {
-            c.eqBands[0] = { 250.0f, +4.0f, 1.0f };
-            c.eqBands[1] = { 1200.0f, +6.0f, 1.2f };
-            c.eqBands[2] = { 3000.0f, +7.0f, 1.4f };
-            c.upCompThresholdDb = -46.0f;
-            c.upCompMaxGainDb = 16.0f;
-            c.transAmount = 3.0f;
+            c.eqBands[0] = { 250.0f, +5.0f, 1.1f };
+            c.eqBands[1] = { 1200.0f, +7.0f, 1.3f };
+            c.eqBands[2] = { 3000.0f, +8.0f, 1.5f };
+            c.upCompThresholdDb = -44.0f;
+            c.upCompMaxGainDb = 18.0f;
+            c.transAmount = 3.5f;
             c.selfSuppressDepthDb = 8.0f;
+            c.limiterCeilingDb = -1.0f;       // gunfire stays at default volume
+            c.gunshotReduceAmountDb = 6.0f;   // but loud gunshots are tamed
             break;
         }
         case Preset::GunshotSafe: {

@@ -6,6 +6,7 @@
 
 #include "../config.h"
 #include "biquad.h"
+#include "downward_compressor.h"
 #include "limiter.h"
 #include "self_footstep_suppressor.h"
 #include "transient_shaper.h"
@@ -82,6 +83,9 @@ public:
         self_.configure(fs, cfg.selfSuppressAttackMs, cfg.selfSuppressReleaseMs,
                         cfg.selfSuppressDepthDb, cfg.selfSuppressMonoRatio, cfg.transSenseDb);
         limiter_.configure(fs, cfg.limiterCeilingDb, cfg.limiterLookaheadMs, cfg.limiterReleaseMs);
+        down_.configure(fs, cfg.gunshotReduceThresholdDb, cfg.gunshotReduceRatio,
+                        cfg.gunshotReduceAmountDb, cfg.gunshotReduceAttackMs,
+                        cfg.gunshotReduceReleaseMs);
 
         // Remember config-level enables for the runtime gating below.
         eqEnabled_ = true;
@@ -128,6 +132,7 @@ public:
         if (up) up_.process(io, frames);
         if (tr) trans_.process(io, frames);
         if (sf) self_.process(io, frames);
+        down_.process(io, frames);   // gunshot reduce (loud signals only)
         if (lm) limiter_.process(io, frames);
     }
 
@@ -150,6 +155,7 @@ private:
     UpwardCompressor up_;
     TransientShaper trans_;
     SelfFootstepSuppressor self_;
+    DownwardCompressor down_;
     Limiter limiter_;
 };
 

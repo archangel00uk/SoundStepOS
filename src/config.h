@@ -53,6 +53,13 @@ struct Config {
     float limiterCeilingDb    = -1.0f;   // output ceiling (dBFS)
     float limiterLookaheadMs  = 1.5f;    // lookahead to catch gunshot leading edge
     float limiterReleaseMs    = 60.0f;
+
+    // --- Downward compressor (reduce loud gunshots, leave footsteps alone) ---
+    float gunshotReduceAmountDb    = 0.0f;    // 0 = off; max loud-signal reduction
+    float gunshotReduceThresholdDb = -20.0f;  // reduce signals above this level
+    float gunshotReduceRatio       = 3.0f;    // > 1 = more reduction above threshold
+    float gunshotReduceAttackMs    = 2.0f;
+    float gunshotReduceReleaseMs   = 100.0f;
 };
 
 } // namespace sso

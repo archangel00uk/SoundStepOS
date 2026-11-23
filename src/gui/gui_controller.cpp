@@ -36,7 +36,7 @@ const Color kYellow(255, 235, 190, 40);
 const Color kRed(255, 235, 60, 60);
 
 const int kWinW = 700;
-const int kWinH = 430;
+const int kWinH = 480;
 const UINT kTrayMsg = WM_APP + 1;
 
 // --- Layout ---
@@ -56,11 +56,11 @@ const RECT kToggleRects[5] = {
     { 552, 112, 676, 146 },
 };
 
-const RECT kMeterRect = { 16, 300, 684, 366 };
+const RECT kMeterRect = { 16, 372, 684, 430 };
 
 // --- Parameter knobs ---
 enum {
-    K_HP = 0, K_LOW, K_MID, K_HIGH, K_LIFT, K_TRANS, K_SELF, K_CEILING
+    K_HP = 0, K_LOW, K_MID, K_HIGH, K_LIFT, K_TRANS, K_SELF, K_GUNSHOT, K_CEILING
 };
 
 struct KnobSpec {
@@ -77,13 +77,12 @@ const KnobSpec kKnobs[] = {
     { K_LIFT,    L"Distant lift",20  },
     { K_TRANS,   L"Transient",   10  },
     { K_SELF,    L"Self-step",   15  },
+    { K_GUNSHOT, L"Gun reduce",  12  },
     { K_CEILING, L"Ceiling",     110 },
 };
 
-const int kKnobCount = 8;
-const int kKnobCy = 225;
+const int kKnobCount = 9;
 const int kKnobR = 26;
-const int kKnobSpacing = 82;
 
 const audio::Feature kFeatures[5] = {
     audio::Feature::Eq, audio::Feature::UpComp, audio::Feature::Transient,
@@ -108,6 +107,7 @@ void ApplyKnobPos(Config& c, int id, int pos) {
         case K_LIFT:    c.upCompMaxGainDb = static_cast<float>(pos); break;
         case K_TRANS:   c.transAmount = pos * 0.5f; break;
         case K_SELF:    c.selfSuppressDepthDb = static_cast<float>(pos); break;
+        case K_GUNSHOT: c.gunshotReduceAmountDb = static_cast<float>(pos); break;
         case K_CEILING: c.limiterCeilingDb = -12.0f + pos * 0.1f; break;
         default: break;
     }
@@ -122,6 +122,7 @@ int KnobPosFromConfig(const Config& c, int id) {
         case K_LIFT:    return static_cast<int>(c.upCompMaxGainDb + 0.5f);
         case K_TRANS:   return static_cast<int>(c.transAmount * 2.0f + 0.5f);
         case K_SELF:    return static_cast<int>(c.selfSuppressDepthDb + 0.5f);
+        case K_GUNSHOT: return static_cast<int>(c.gunshotReduceAmountDb + 0.5f);
         case K_CEILING: return static_cast<int>((c.limiterCeilingDb + 12.0f) * 10.0f + 0.5f);
         default: return 0;
     }
@@ -136,6 +137,7 @@ void FormatKnobValue(int id, int pos, wchar_t* buf, size_t len) {
         case K_LIFT:    _snwprintf_s(buf, len, _TRUNCATE, L"%d dB", pos); break;
         case K_TRANS:   _snwprintf_s(buf, len, _TRUNCATE, L"%.1f dB", pos * 0.5f); break;
         case K_SELF:    _snwprintf_s(buf, len, _TRUNCATE, L"%d dB", pos); break;
+        case K_GUNSHOT: _snwprintf_s(buf, len, _TRUNCATE, L"%d dB", pos); break;
         case K_CEILING: _snwprintf_s(buf, len, _TRUNCATE, L"%.1f dB", -12.0f + pos * 0.1f); break;
         default: break;
     }
@@ -147,7 +149,15 @@ int KnobMax(int id) {
     return 1;
 }
 
-int KnobCx(int i) { return 62 + i * kKnobSpacing; }
+int KnobCx(int i) {
+    const int cols = (i < 5) ? 5 : 4;
+    const int col = (i < 5) ? i : (i - 5);
+    const int spacing = 130;
+    const int total = cols * spacing;
+    const int startX = (kWinW - total) / 2 + spacing / 2;
+    return startX + col * spacing;
+}
+int KnobCy(int i) { return (i < 5) ? 195 : 290; }
 
 // --- Drawing helpers ---
 void FillRoundRect(Graphics& g, const RECT& r, float radius, Color c) {
@@ -376,7 +386,7 @@ void GuiController::OnMouseDown(int x, int y) {
     // Knobs.
     for (int i = 0; i < kKnobCount; ++i) {
         const int cx = KnobCx(i);
-        const int dx = x - cx, dy = y - kKnobCy;
+        const int dx = x - cx, dy = y - KnobCy(i);
         if (dx * dx + dy * dy <= (kKnobR + 6) * (kKnobR + 6)) {
             dragKnob_ = kKnobs[i].id;
             dragStartPos_ = KnobPosFromConfig(config_, dragKnob_);
@@ -463,12 +473,13 @@ void GuiController::Draw(Gdiplus::Graphics& g, int w, int) {
         const int pos = KnobPosFromConfig(config_, id);
         const float v = (float)pos / (float)max;
         const int cx = KnobCx(i);
-        DrawKnob(g, cx, kKnobCy, kKnobR, v);
+        const int cy = KnobCy(i);
+        DrawKnob(g, cx, cy, kKnobR, v);
 
         wchar_t val[32];
         FormatKnobValue(id, pos, val, _countof(val));
-        RECT lr{ cx - 60, kKnobCy + kKnobR + 6, cx + 60, kKnobCy + kKnobR + 24 };
-        RECT vr{ cx - 60, kKnobCy + kKnobR + 24, cx + 60, kKnobCy + kKnobR + 42 };
+        RECT lr{ cx - 60, cy + kKnobR + 6, cx + 60, cy + kKnobR + 24 };
+        RECT vr{ cx - 60, cy + kKnobR + 24, cx + 60, cy + kKnobR + 42 };
         DrawCenteredText(g, kKnobs[i].label, knobLabel, kTextDim, lr);
         DrawCenteredText(g, val, knobValue, kText, vr);
     }
@@ -483,7 +494,7 @@ void GuiController::Draw(Gdiplus::Graphics& g, int w, int) {
     }
     Font meterLabel(L"Segoe UI", 10);
     SolidBrush meterBrush(kTextDim);
-    g.DrawString(L"OUTPUT", -1, &meterLabel, PointF(20, 372), &meterBrush);
+    g.DrawString(L"OUTPUT", -1, &meterLabel, PointF(16, 356), &meterBrush);
 }
 
 void GuiController::OnPaint() {
